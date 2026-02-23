@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitorar Operadores</title>
+    <style>
+        :root { 
+            --primary-color: #4a90e2; 
+            --bg-color: #f4f7fa; 
+            --card-bg: #ffffff; 
+            --text-color: #333; 
+            --radius: 10px; 
+            --alert-color: #e24a4a;
+        }
+        body { 
+            margin: 0; 
+            font-family: 'Segoe UI', sans-serif; 
+            background: var(--bg-color); 
+            padding: 20px; 
+        }
+        .container { 
+            max-width: 800px; 
+            margin: auto; 
+            background: var(--card-bg); 
+            padding: 30px; 
+            border-radius: var(--radius); 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1); 
+        }
+        h1 { 
+            color: var(--primary-color); 
+            text-align: center; 
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 20px; 
+        }
+        th, td { 
+            padding: 12px; 
+            text-align: left; 
+            border-bottom: 1px solid #ddd; 
+        }
+        th { 
+            background-color: #f2f2f2; 
+            color: var(--primary-color); 
+        }
+        .online { 
+            color: green; 
+            font-weight: bold; 
+        }
+        .offline { 
+            color: red; 
+            font-weight: bold; 
+        }
+        .back { 
+            display: block; 
+            text-align: center; 
+            margin-top: 20px; 
+            color: var(--primary-color); 
+            text-decoration: none; 
+        }
+        .alert { 
+            color: var(--alert-color); 
+            font-weight: bold; 
+            text-align: center; 
+            margin-top: 10px; 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Monitorar Operadores</h1>
+        <div id="alerts" class="alert"></div>
+        <table id="operatorsTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Email</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        <a href="admin.html" class="back">Voltar ao Dashboard</a>
+    </div>
+    <script>
+        history.pushState(null, null, location.href);
+        window.onpopstate = () => history.go(1);
+        if (!sessionStorage.getItem('role') || sessionStorage.getItem('role') !== 'admin') {
+            location.replace('index.html');
+        }
+
+        function fetchOperators() {
+            fetch('api/get_operator_status.php', { credentials: 'include' })
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'error') {
+                    document.getElementById('alerts').innerText = data.message;
+                    if (data.message === 'Unauthorized') {
+                        sessionStorage.clear();
+                        location.replace('index.html');
+                    }
+                    return;
+                }
+                document.getElementById('alerts').innerText = '';
+                const tbody = document.querySelector('#operatorsTable tbody');
+                tbody.innerHTML = '';
+                data.forEach(op => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `<td>${op.id}</td><td>${op.email}</td><td class="${op.status}">${op.status}</td>`;
+                    tbody.appendChild(row);
+                });
+            })
+            .catch(error => {
+                document.getElementById('alerts').innerText = 'Erro ao carregar operadores: ' + error.message;
+            });
+        }
+        setInterval(fetchOperators, 5000); fetchOperators();
+    </script>
+</body>
+</html>
