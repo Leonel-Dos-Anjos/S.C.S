@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciar Operadores</title>
+    <style>
+        :root { 
+            --primary-color: #4a90e2; 
+            --bg-color: #f4f7fa; 
+            --card-bg: #ffffff; 
+            --text-color: #333; 
+            --radius: 10px; 
+            --alert-color: #e24a4a;
+        }
+        body { 
+            margin: 0; 
+            font-family: 'Segoe UI', sans-serif; 
+            background: var(--bg-color); 
+            padding: 20px; 
+        }
+        .container { 
+            max-width: 800px; 
+            margin: auto; 
+            background: var(--card-bg); 
+            padding: 30px; 
+            border-radius: var(--radius); 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1); 
+        }
+        h1 { 
+            color: var(--primary-color); 
+            text-align: center; 
+        }
+        .section { 
+            margin-bottom: 25px; 
+        }
+        input { 
+            padding: 12px; 
+            border: 1px solid #ccc; 
+            border-radius: var(--radius); 
+            width: 100%; 
+            margin-bottom: 10px; 
+        }
+        button { 
+            padding: 12px; 
+            background: var(--primary-color); 
+            color: #fff; 
+            border: none; 
+            border-radius: var(--radius); 
+            cursor: pointer; 
+            width: 100%; 
+        }
+        button:hover { 
+            background: #357ABD; 
+        }
+        .back { 
+            display: block; 
+            text-align: center; 
+            margin-top: 20px; 
+            color: var(--primary-color); 
+            text-decoration: none; 
+        }
+        .alert { 
+            color: var(--alert-color); 
+            font-weight: bold; 
+            text-align: center; 
+            margin-bottom: 10px; 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Gerenciar Operadores</h1>
+        <div id="alerts" class="alert"></div>
+        <div class="section">
+            <h2>Adicionar Operador</h2>
+            <input id="newEmail" type="email" placeholder="Email (ex.: novo@gmail.com)">
+            <input id="newPass" type="password" placeholder="Senha (mín. 6 caracteres)">
+            <input id="newFingerprint" type="number" min="1" max="255" placeholder="ID da Impressão Digital (1-255)">
+            <button onclick="addOperator()">Adicionar Operador</button>
+        </div>
+        <div class="section">
+            <h2>Remover Operador</h2>
+            <input id="remId" type="number" min="1" placeholder="ID do Operador">
+            <button onclick="removeOperator()">Remover Operador</button>
+        </div>
+        <a href="admin.html" class="back">Voltar ao Dashboard</a>
+    </div>
+    <script>
+        history.pushState(null, null, location.href);
+        window.onpopstate = () => history.go(1);
+        if (!sessionStorage.getItem('role') || sessionStorage.getItem('role') !== 'admin') {
+            location.replace('index.html');
+        }
+        function addOperator() {
+            const email = document.getElementById('newEmail').value;
+            const pass = document.getElementById('newPass').value;
+            const fingerprint = parseInt(document.getElementById('newFingerprint').value);
+            if (!email || !pass || !fingerprint) {
+                document.getElementById('alerts').innerText = 'Todos os campos são obrigatórios';
+                return;
+            }
+            if (fingerprint < 1 || fingerprint > 255) {
+                document.getElementById('alerts').innerText = 'ID da impressão digital deve ser entre 1 e 255';
+                return;
+            }
+            fetch('api/add_operator.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `email=${encodeURIComponent(email)}&password=${encodeURIComponent(pass)}&fingerprint_id=${fingerprint}`,
+                credentials: 'include'
+            })
+            .then(r => r.json())
+            .then(d => {
+                document.getElementById('alerts').innerText = d.message;
+                if (d.status === 'success') {
+                    document.getElementById('newEmail').value = '';
+                    document.getElementById('newPass').value = '';
+                    document.getElementById('newFingerprint').value = '';
+                }
+                if (d.message === 'Unauthorized') {
+                    sessionStorage.clear();
+                    location.replace('index.html');
+                }
+            })
+            .catch(e => {
+                document.getElementById('alerts').innerText = 'Erro: ' + e.message;
+            });
+        }
+        function removeOperator() {
+            const id = parseInt(document.getElementById('remId').value);
+            if (!id || id < 1) {
+                document.getElementById('alerts').innerText = 'Insira um ID de operador válido';
+                return;
+            }
+            fetch('api/remove_operator.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `user_id=${id}`,
+                credentials: 'include'
+            })
+            .then(r => r.json())
+            .then(d => {
+                document.getElementById('alerts').innerText = d.message;
+                if (d.status === 'success') {
+                    document.getElementById('remId').value = '';
+                }
+                if (d.message === 'Unauthorized') {
+                    sessionStorage.clear();
+                    location.replace('index.html');
+                }
+            })
+            .catch(e => {
+                document.getElementById('alerts').innerText = 'Erro: ' + e.message;
+            });
+        }
+    </script>
+</body>
+</html>
