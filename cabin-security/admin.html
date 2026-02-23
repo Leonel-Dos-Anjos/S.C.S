@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cabin Security - Admin</title>
+    <style>
+        :root { --primary-color: #4a90e2; --bg-color: #f4f7fa; --card-bg: #ffffff; --text-color: #333; --radius: 10px; }
+        body { margin:0; font-family:'Segoe UI',sans-serif; background:var(--bg-color); padding:20px; }
+        .container { max-width:900px; margin:auto; background:var(--card-bg); padding:30px; border-radius:var(--radius); box-shadow:0 4px 20px rgba(0,0,0,0.1); }
+        header { display:flex; justify-content: space-between; align-items: center; margin-bottom:20px; }
+        h1 { margin:0; color:var(--primary-color); }
+        button.logout { background:#e24a4a; }
+        button.logout:hover { background:#b03030; }
+        .section { margin-bottom:25px; }
+        input, button { padding:12px; border-radius:var(--radius); font-size:1rem; }
+        input { border:1px solid #ccc; width:calc(100% - 28px); margin-right:10px; }
+        button { border:none; background:var(--primary-color); color:#fff; cursor:pointer; margin-right:5px; }
+        button:hover { background:#357ABD; }
+        #sensors { background:#eff6ff; padding:15px; border-radius:var(--radius); margin-bottom:20px; text-align:center; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Admin Dashboard</h1>
+            <button class="logout" onclick="onLogout()">Logout</button>
+        </header>
+        <div id="sensors"></div>
+        <div class="section">
+            <h2>Manage Fingerprints</h2>
+            <input id="userId" type="number" placeholder="User ID"><input id="fingerprintId" type="number" placeholder="FP ID">
+            <button onclick="addFingerprint()">Add</button>
+            <button onclick="removeFingerprint()">Remove</button>
+        </div>
+        <div class="section">
+            <h2>Operators</h2>
+            <input id="newEmail" type="email" placeholder="new@mail.com"><input id="newPass" type="password" placeholder="Password">
+            <button onclick="addOperator()">Add</button>
+            <input id="remId" type="number" placeholder="Operator ID"><button onclick="removeOperator()">Remove</button>
+        </div>
+    </div>
+    <script>
+       // Prevent back navigation
+        history.pushState(null, null, location.href);
+        window.onpopstate = () => history.go(1);
+        // Session check
+        if (!sessionStorage.getItem('role') || sessionStorage.getItem('role') !== 'admin') location.replace('index.html');
+
+        function fetchSensors() {
+            fetch('api/get_sensors.php')
+            .then(r => r.json())
+            .then(d => document.getElementById('sensors').innerHTML = `Temp: ${d.temperature}°C<br>Hum: ${d.humidity}%<br>Flame: ${d.flame}`);
+        }
+        setInterval(fetchSensors, 5000); fetchSensors();
+
+        function addFingerprint() {
+            const uid = document.getElementById('userId').value;
+            const fid = document.getElementById('fingerprintId').value;
+            fetch('api/manage_fingerprints.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `action=add&user_id=${uid}&fingerprint_id=${fid}`
+            })
+            .then(r => r.json())
+            .then(d => alert(d.message));
+        }
+
+        function removeFingerprint() {
+            const uid = document.getElementById('userId').value;
+            const fid = document.getElementById('fingerprintId').value;
+            fetch('api/manage_fingerprints.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `action=remove&user_id=${uid}&fingerprint_id=${fid}`
+            })
+            .then(r => r.json())
+            .then(d => alert(d.message));
+        }
+
+        function addOperator() {
+            const email = document.getElementById('newEmail').value;
+            const pass = document.getElementById('newPass').value;
+            fetch('api/add_operator.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `email=${encodeURIComponent(email)}&password=${encodeURIComponent(pass)}`
+            })
+            .then(r => r.json())
+            .then(d => {
+                alert(d.message);
+                // Optionally, clear input fields
+                document.getElementById('newEmail').value = '';
+                document.getElementById('newPass').value = '';
+            });
+        }
+
+        function removeOperator() {
+            const id = document.getElementById('remId').value;
+            if (!id) { alert('Please enter Operator ID'); return; }
+            fetch('api/remove_operator.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `user_id=${id}`
+            })
+            .then(r => r.json())
+            .then(d => {
+                alert(d.message);
+                document.getElementById('remId').value = '';
+            })
+            .catch(e => alert('Error: ' + e));
+        }
+
+        function onLogout() {
+            sessionStorage.clear();
+            location.replace('index.html');
+        }
+    </script>
+</body>
+</html>
