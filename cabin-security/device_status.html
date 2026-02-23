@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cabin Security - Device Status</title>
+    <style>
+        :root { --primary-color: #4a90e2; --bg-color: #f4f7fa; --card-bg: #ffffff; --text-color: #333; --radius: 10px; }
+        body { margin:0; font-family:'Segoe UI',sans-serif; background:var(--bg-color); padding:20px; }
+        .container { max-width:600px; margin:auto; background:var(--card-bg); padding:30px; border-radius:var(--radius); box-shadow:0 4px 20px rgba(0,0,0,0.1); }
+        header { display:flex; justify-content: space-between; align-items: center; margin-bottom:20px; }
+        h1 { color:var(--primary-color); margin:0; }
+        button.logout { background:#e24a4a; color:#fff; border:none; padding:10px 20px; border-radius:var(--radius); cursor:pointer; }
+        button.logout:hover { background:#b03030; }
+        #sensors { background:#eff6ff; padding:15px; border-radius:var(--radius); font-size:1.2rem; text-align:center; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Device Status</h1>
+            <button class="logout" onclick="onLogout()">Logout</button>
+        </header>
+        <div id="sensors"></div>
+    </div>
+    <script>
+        // Prevent back navigation
+        history.pushState(null, null, location.href);
+        window.onpopstate = () => history.go(1);
+        // Session check
+        if (!sessionStorage.getItem('role') || sessionStorage.getItem('role') !== 'admin') location.replace('index.html');
+
+        function fetchSensors() {
+            fetch('api/get_sensors.php')
+            .then(r => r.json())
+            .then(d => document.getElementById('sensors').innerHTML = `Temp: ${d.temperature}°C<br>Hum: ${d.humidity}%<br>Flame: ${d.flame}`);
+        }
+        setInterval(fetchSensors, 5000); fetchSensors();
+
+        function onLogout() {
+            sessionStorage.clear();
+            location.replace('index.html');
+        }
+    </script>
+</body>
+</html>
